@@ -1,22 +1,39 @@
 # Certificate Generator
 
-This tool generates professional certificates from a LaTeX template for a list of participants.
+This tool generates professional certificates from a LaTeX template for a list of participants. You can run it either natively (with Python and LaTeX installed) or using Docker (recommended).
+
+## 🚀 Features
+
+- Generate beautiful, professional certificates from a LaTeX template
+- Supports custom logos and design elements
+- Containerized with Docker for easy setup
+- Cross-platform support (Windows, macOS, Linux)
+- Batch processing of multiple participants
 
 ## Prerequisites
 
-### 1. Python 3.6 or higher
+### Option 1: Using Docker (Recommended)
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine
+
+### Option 2: Native Installation
+
+#### 1. Python 3.6 or higher
+
 - **Windows**: Download from [python.org](https://www.python.org/downloads/windows/)
 - **Linux**: Use your package manager (e.g., `sudo apt install python3` on Ubuntu/Debian)
 - **macOS**: Comes pre-installed or use [Homebrew](https://brew.sh/): `brew install python`
 
-### 2. LaTeX Distribution
+#### 2. LaTeX Distribution
 
-#### Windows
+##### Windows
+
 1. Download and install [MiKTeX](https://miktex.org/download) (Recommended)
    - Choose the complete installation
    - Enable automatic package installation when prompted
 
-#### macOS
+##### macOS
+
 1. Install BasicTeX (minimal TeX distribution):
    ```bash
    brew install --cask basictex
@@ -25,66 +42,150 @@ This tool generates professional certificates from a LaTeX template for a list o
    ```bash
    export PATH="$PATH:/Library/TeX/texbin"
    ```
-3. Install additional required packages:
-   ```bash
-   sudo tlmgr update --self
-   sudo tlmgr install latexmk
-   ```
 
-#### Linux (Ubuntu/Debian)
+##### Linux (Ubuntu/Debian)
+
 ```bash
 sudo apt update
-sudo apt install texlive-latex-base texlive-latex-extra latexmk
+sudo apt install texlive-full
 ```
 
 ## Installation
 
-1. Clone or download this repository
-2. Install Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+Clone or download this repository
+
+```bash
+git clone https://github.com/Pixalesce/Latex-Certificate-Generator
+cd certificate-generator
+```
 
 ## Usage
 
-1. Prepare a text file (`participants.txt`) with one participant name per line
+### Using Docker (Recommended)
 
-2. Run the generator:
+#### Prerequisites
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine installed
+- Git (optional, if cloning the repository)
+
+#### Quick Start
+
+1. **Configure your certificates**:
+   - Edit `workshop_info.txt` with your workshop details and participant names
+   - Customize `certificate.tex` if you want to change the design
+   - Add your logo files to the `logos/` directory
+
+2. **Build and run the container**:
+
    ```bash
-   python generate_certificates.py participants.txt
+   # Build the Docker image (first time only)
+   docker compose build certificate-generator
+
+   # Generate certificates
+   docker compose run --rm certificate-generator
    ```
 
-3. Generated PDFs will be saved in the `pdfs` directory
+   The generated PDFs will be available in the `pdfs/` directory.
 
-## Command Line Options
+#### Advanced Usage
+
+- **Regenerate certificates** (after making changes to templates or data):
+
+  ```bash
+  docker compose run --rm certificate-generator
+  ```
+
+- **Clean up** (remove generated files and Docker resources):
+
+  ```bash
+  # Remove generated PDFs
+  rm -rf pdfs/*
+
+  # Remove Docker containers and networks (keeps the built image)
+  docker compose down
+
+  # Remove everything including built images
+  docker compose down --rmi all
+  ```
+
+#### Volume Mounts
+
+The Docker container uses the following volume mounts:
+
+- `./pdfs` - Output directory for generated PDFs
+- `./workshop_info.txt` - Workshop configuration and participant list
+- `./certificate.tex` - LaTeX template for the certificate
+- `./logos/` - Directory containing logo files
+
+You can modify these in the `docker compose.yml` file if needed.
+
+### Native Installation
+
+1. Prepare your `workshop_info.txt` file with workshop details and participant names
+2. Run the generator:
+   ```
+   python3 generate_certificates.py
+   ```
+3. Find your generated PDFs in the `pdfs` directory
+
+## 🎨 Customization
+
+### Certificate Design
+
+Edit the `certificate.tex` file to customize the certificate design.
+
+### Logos
+
+Place your logo file in the `logos/` directory and rename it as `partner.png`
+
+### Workshop Information
+
+Edit `workshop_info.txt` to set up your workshop details and participant list. The format is:
 
 ```
-usage: generate_certificates.py [-h] [-o OUTPUT_DIR] input_file
+# Workshop details
+workshop_title=My Awesome Workshop
+workshop_date=January 1, 2024
+trainer_name=John Doe
 
-Generate certificates from a list of names
-
-positional arguments:
-  input_file            Text file containing participant names (one per line)
-
-options:
-  -h, --help            show this help message and exit
-  -o OUTPUT_DIR, --output-dir OUTPUT_DIR
-                        Directory to save generated PDFs (default: pdfs)
+# Participant list (one per line)
+== Participants ==
+Alice Smith
+Bob Johnson
+Charlie Brown
 ```
 
-## Customization
+## 🔧 Troubleshooting
 
-To modify the certificate design, edit the `certificate.tex` file. The following placeholders are used:
-- `PARTICIPANT_NAME`: Will be replaced with the participant's name
-- `TRAINER_NAME`: Will be replaced with the trainer's name
-- `DATE`: Will be replaced with the current date
+### Docker Issues
 
-## Troubleshooting
+- **Container won't start**:
+  - Make sure Docker is running
+  - Check for errors with `docker compose logs`
+  - Try rebuilding the container: `docker compose build --no-cache`
 
-- **LaTeX not found**: Ensure the LaTeX binaries are in your system PATH
-- **Missing LaTeX packages**: Install any missing packages using your LaTeX distribution's package manager
-- **Permission errors**: On Linux/macOS, you might need to use `sudo` for package installations
+- **Permission issues with generated files**:
+  ```bash
+  # On Linux/macOS, fix permissions:
+  sudo chown -R $USER:$USER .
+  ```
 
-## License
+### LaTeX Issues
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+- **Missing LaTeX packages**:
+  - The Docker image includes common LaTeX packages
+  - If you need additional packages, modify the Dockerfile and rebuild:
+    ```dockerfile
+    RUN tlmgr update --self
+    RUN tlmgr install collection-fontsrecommended
+    ```
+
+- **Font issues**:
+  - The container includes standard fonts
+  - For custom fonts, add them to the `fonts/` directory and update the Dockerfile
+
+### Common Errors
+
+- **"No such file or directory"**: Check file paths in your configuration
+- **LaTeX compilation errors**: Check the output for specific LaTeX error messages
+- **Missing logos**: Ensure logo files exist in the `logos/` directory
