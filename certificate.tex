@@ -1,0 +1,95 @@
+\documentclass[a4paper, landscape]{article}
+\usepackage[utf8]{inputenc} 
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{amsmath, amsfonts, amssymb}
+\usepackage{graphicx}
+\usepackage[english]{babel}
+\usepackage[top=1in, bottom=1in, left=1in, right=1in]{geometry}
+\usepackage{tikz}
+\usetikzlibrary{decorations.pathmorphing, decorations.pathreplacing, arrows.meta, positioning, calc}
+\usepackage{array}
+\pagestyle{empty}
+
+\definecolor{KalaamBlue}{HTML}{32639A}
+
+% --- Certificate Content ---
+\begin{document}
+
+\begin{center}
+    \begin{tikzpicture}[overlay, remember picture]
+        % Define the safe area within the borders for positioning content
+        \coordinate (SWBorder) at ($(current page.south west)+(0.7in,0.7in)$);
+        \coordinate (NEBorder) at ($(current page.north east)-(0.7in,0.7in)$);
+
+        % Main Outer Border
+        \draw[line width=4pt, color=KalaamBlue]
+        ($(current page.south west)+(0.5in,0.5in)$) rectangle
+        ($(current page.north east)-(0.5in,0.5in)$);
+
+        % Inner Decorative Border
+        \draw[line width=1.5pt, color=KalaamBlue!50!]
+        ($(current page.south west)+(0.6in,0.6in)$) rectangle
+        ($(current page.north east)-(0.6in,0.6in)$);
+        \draw[line width=0.5pt, color=KalaamBlue!30!black, dotted] % Dotted inner line
+        (SWBorder) rectangle (NEBorder);
+
+        % --- Logos ---
+        % Logo 1 (Left)
+        \node (wf) [anchor=north west, xshift=1.7in, yshift=-0.4in] at (NEBorder -| SWBorder) {
+            \includegraphics[height=0.9in]{logos/wf.png} % Replace with actual logo file
+        };
+
+        % Logo 2 (Center)
+        \node (kalaam) [anchor=north, yshift=-1.1in] at (current page.north) {
+            \includegraphics[height=0.75in]{logos/kalaam.png} % Replace with actual logo file
+        };
+
+        % Logo 3 (Right)
+        \node (suluh) [anchor=north east, xshift=-1.2in, yshift=-0.1in] at (NEBorder) {
+            \includegraphics[height=1.1in]{<<PARTNER_LOGO>>}
+        };
+
+    \end{tikzpicture}
+
+    \vspace*{1.3in} % Sufficient space for logos and title
+
+    {\Huge \textbf{<<CERTIFICATE_NAME>>}}
+
+    \vspace{0.2in}
+
+    This certificate is proudly presented to
+
+    \vspace{0.45in}
+
+    {\color{KalaamBlue} \fontsize{48pt}{50pt}\selectfont \textbf{<<PARTICIPANT_NAME>>}}
+
+    \vspace{0.45in}
+
+    For demonstrating proficiency in building and maintaining a Wildfire website in
+
+    \vspace{0.25in}
+
+    {\huge \textbf{<<WORKSHOP_NAME>>}}
+
+    \vspace{0.2in}
+
+    from <<START_DATE>> to <<END_DATE>> <<YEAR>>.
+
+    \vspace{0.8in} % Space before signatures
+
+    % --- Signature Lines for 3 Trainers ---
+    \begin{tabular}{
+        >{\centering\arraybackslash}p{7cm}>{\centering\arraybackslash}p{7cm}>{\centering\arraybackslash}p{7cm}
+    }
+        \Large \textbf{<<TRAINER1>>} & \Large \textbf{<<TRAINER2>>} & \Large \textbf{<<TRAINER3>>} \\
+        \small {<<TRAINER_TITLE_1>>} & \small {<<TRAINER_TITLE_2>>} & \small {<<TRAINER_TITLE_3>>} \\
+    \end{tabular}
+
+    \vspace{0.4in}
+
+    {\small \textit{<<FOOTER_TEXT>>}}
+
+\end{center}
+
+\end{document}

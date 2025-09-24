@@ -1,0 +1,6 @@
+.venv
+logos/partner.png
+pdfs/
+.env*
+.DS_Store
+suluh_participants.txt
