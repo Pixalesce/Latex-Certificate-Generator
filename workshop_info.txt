@@ -1,0 +1,33 @@
+# Certificate Generation Configuration
+# This file contains both participant names and certificate details
+# Lines starting with '#' are comments and will be ignored
+
+# === Certificate Details (applied to all certificates) ===
+CERTIFICATE_NAME=Certificate of Achievement
+WORKSHOP_NAME=Wildfire Workshop
+START_DATE=01 September
+END_DATE=15 September
+YEAR=2025
+FOOTER_TEXT=The greatest missionary is the Bible in the mother tongue. It needs no furlough and is never considered a foreigner.
+
+# Trainer Information
+# Add details of up to 4 trainers here
+TRAINER1=Trainer 1
+TRAINER_TITLE_1=Kalaam Trainer
+TRAINER2=Trainer 2
+TRAINER_TITLE_2=Kalaam Trainer
+TRAINER3=Trainer 3
+TRAINER_TITLE_3=Partner Trainer
+
+# Partner Logo
+PARTNER_LOGO=logos/partner.png
+
+=== Participant List ===
+# Add one participant name per line below
+# Format: FirstName LastName
+
+John Doe
+Jane Smith
+Alex Johnson
+
+# Add more participants as needed

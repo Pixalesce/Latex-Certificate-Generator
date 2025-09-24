@@ -59,11 +59,59 @@ def escape_latex(text):
     
     return text
 
+def generate_trainer_table(config):
+    """Generate LaTeX table for 1-4 trainers with dynamic column widths."""
+    # Collect all trainers
+    trainers = []
+    for i in range(1, 5):
+        trainer_name = config.get(f'TRAINER{i}', '').strip()
+        if trainer_name:
+            trainer_title = config.get(f'TRAINER_TITLE_{i}', '').strip()
+            trainers.append((trainer_name, trainer_title))
+    
+    if not trainers:
+        return ""  # No trainers to display
+    
+    num_trainers = len(trainers)
+    
+    # Build the table rows
+    name_cells = []
+    title_cells = []
+    
+    for name, title in trainers:
+        name_cells.append(f"\\Large \\textbf{{{escape_latex(name)}}}")
+        title_cells.append(f"\\small{{{escape_latex(title)}}}")
+    
+    # Create a simple centered table with trainer names and titles
+    table = [r"\begin{center}"]
+    
+    # Add horizontal space between columns (2em on each side of the column separator)
+    col_sep = "@{\hspace{" + str((16 / num_trainers) + 2) + "em}}"
+    col_spec = ("c" + col_sep) * (num_trainers - 1) + "c"
+    
+    # Start the table with centered columns and custom column separation
+    table.append(r"\begin{tabular}{%s}" % col_spec)
+    
+    # Add name cells with minimal vertical spacing
+    table.append(" & ".join(name_cells) + r"\\[2pt]")  # Reduced from [6pt] to [2pt]
+    
+    # Add title cells with minimal vertical spacing
+    table.append(" & ".join(title_cells) + r"\\")
+    
+    # Close the table
+    table.append(r"\end{tabular}")
+    table.append(r"\end{center}")
+    
+    return "\n".join(table)
+
 def generate_certificate(participant_name, config):
     """Generate a certificate for the given participant using the provided config."""
     # Read the template
     with open('certificate.tex', 'r', encoding='utf-8') as file:
         content = file.read()
+    
+    # Generate the trainer table
+    trainer_table = generate_trainer_table(config)
     
     # Prepare replacements
     replacements = {
@@ -73,15 +121,15 @@ def generate_certificate(participant_name, config):
         '<<START_DATE>>': escape_latex(config.get('START_DATE', '')),
         '<<END_DATE>>': escape_latex(config.get('END_DATE', '')),
         '<<YEAR>>': escape_latex(config.get('YEAR', '')),
-        '<<TRAINER1>>': escape_latex(config.get('TRAINER1', '')),
-        '<<TRAINER2>>': escape_latex(config.get('TRAINER2', '')),
-        '<<TRAINER3>>': escape_latex(config.get('TRAINER3', '')),
-        '<<TRAINER_TITLE_1>>': escape_latex(config.get('TRAINER_TITLE_1', '')),
-        '<<TRAINER_TITLE_2>>': escape_latex(config.get('TRAINER_TITLE_2', '')),
-        '<<TRAINER_TITLE_3>>': escape_latex(config.get('TRAINER_TITLE_3', '')),
         '<<FOOTER_TEXT>>': escape_latex(config.get('FOOTER_TEXT', '')),
-        '<<PARTNER_LOGO>>': config.get('PARTNER_LOGO', 'logos/partner.png')
+        '<<PARTNER_LOGO>>': config.get('PARTNER_LOGO', 'logos/partner.png'),
+        '<<TRAINER_TABLE>>': trainer_table
     }
+    
+    # Add trainer placeholders for backward compatibility (though they won't be used in the template)
+    for i in range(1, 5):
+        replacements[f'<<TRAINER{i}>>'] = escape_latex(config.get(f'TRAINER{i}', ''))
+        replacements[f'<<TRAINER_TITLE_{i}>>'] = escape_latex(config.get(f'TRAINER_TITLE_{i}', ''))
     
     # Apply all replacements
     for placeholder, value in replacements.items():
