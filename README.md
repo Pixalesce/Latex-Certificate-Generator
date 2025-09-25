@@ -1,111 +1,59 @@
 # Certificate Generator
 
 This tool generates professional certificates from a LaTeX template for a list of participants. You can run it either:
-- Using the graphical user interface (GUI) - Easiest method
-- Via command line (with Python and LaTeX installed)
-- Using Docker (for advanced users)
 
-## 🚀 Features
+- Using the graphical user interface
+- Via command line
+  > both methods are supported via Docker
 
-- Generate beautiful, professional certificates from a LaTeX template
+## Features
+
+- Generate professional certificates from a LaTeX template
 - User-friendly graphical interface for easy customization
-- Supports custom logos and design elements
-- Containerized with Docker for easy setup
-- Cross-platform support (Windows, macOS, Linux)
 - Batch processing of multiple participants
-
-## Prerequisites
-
-### Option 1: Using Docker (Recommended)
-
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine
-
-### Option 2: Native Installation
-
-#### 1. Python 3.6 or higher
-
-- **Windows**: Download from [python.org](https://www.python.org/downloads/windows/)
-- **Linux**: Use your package manager (e.g., `sudo apt install python3` on Ubuntu/Debian)
-- **macOS**: Comes pre-installed or use [Homebrew](https://brew.sh/): `brew install python`
-
-#### 2. LaTeX Distribution
-
-##### Windows
-
-1. Download and install [MiKTeX](https://miktex.org/download) (Recommended)
-   - Choose the complete installation
-   - Enable automatic package installation when prompted
-
-##### macOS
-
-1. Install BasicTeX (minimal TeX distribution):
-   ```bash
-   brew install --cask basictex
-   ```
-2. After installation, add the following to your shell profile (e.g., `~/.zshrc` or `~/.bash_profile`):
-   ```bash
-   export PATH="$PATH:/Library/TeX/texbin"
-   ```
-
-##### Linux (Ubuntu/Debian)
-
-```bash
-sudo apt update
-sudo apt install texlive-full
-```
+- Supports adding of custom logo
+- Containerized with Docker for easy setup across platforms
 
 ## Installation
 
-1. Clone or download this repository:
+1. Clone this repository:
 
 ```bash
 git clone https://github.com/Pixalesce/Latex-Certificate-Generator
 cd Latex-Certificate-Generator
 ```
 
-2. Install the required Python packages:
-
-```bash
-pip install -r requirements-gui.txt
-```
-
-## Running the GUI Application
-
-The easiest way to use the Certificate Generator is through the graphical interface:
-
-1. **Launch the GUI**:
-   ```bash
-   python run_gui.py
-   ```
-   This will start a local web server and open the application in your default web browser.
-
-2. **Using the Interface**:
-   - The application will open at `http://localhost:8501`
-   - Configure your certificate settings in the sidebar
-   - Upload participant names or type them in the text area
-   - Preview the certificate design
-   - Generate and download all certificates with a single click
-
-3. **Troubleshooting**:
-   - If the browser doesn't open automatically, navigate to `http://localhost:8501` manually
-   - Ensure all required Python packages are installed from `requirements-gui.txt`
-   - Check the terminal for any error messages if the application fails to start
-
 ## Usage
 
-### Using Docker (Recommended)
+### Using Docker
 
 #### Prerequisites
 
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/) or Docker Engine installed
 - Git (optional, if cloning the repository)
 
-#### Quick Start
+#### Option 1: Using the GUI (Recommended)
+
+1. **Start the GUI service**:
+
+   ```bash
+   # Build the Docker images (first time only)
+   docker compose build certificate-gui
+
+   # Start the GUI
+   docker compose up -d certificate-gui
+   ```
+
+2. **Access the Web Interface**:
+   - Open your web browser and go to: `http://localhost:8501`
+   - Configure your certificates using the web interface
+   - Download generated PDFs
+
+#### Option 2: Using the Command Line
 
 1. **Configure your certificates**:
-   - Edit `workshop_info.txt` with your workshop details and participant names
-   - Customize `certificate.tex` if you want to change the design
-   - Add your logo files to the `logos/` directory
+   - Edit `workshop_info.txt` with your workshop details and participant names in your favourite text editor
+   - Add your partner's logo to the `logos/` directory, naming it as `partner.png`
 
 2. **Build and run the container**:
 
@@ -119,20 +67,12 @@ The easiest way to use the Certificate Generator is through the graphical interf
 
    The generated PDFs will be available in the `pdfs/` directory.
 
-#### Advanced Usage
+#### Stopping the Services
 
-- **Regenerate certificates** (after making changes to templates or data):
-
-  ```bash
-  docker compose run --rm certificate-generator
-  ```
-
-- **Clean up** (remove generated files and Docker resources):
+- To stop the GUI service, press `Ctrl+C` in the terminal where it's running
+- To remove all containers and networks:
 
   ```bash
-  # Remove generated PDFs
-  rm -rf pdfs/*
-
   # Remove Docker containers and networks (keeps the built image)
   docker compose down
 
@@ -149,18 +89,57 @@ The Docker container uses the following volume mounts:
 - `./certificate.tex` - LaTeX template for the certificate
 - `./logos/` - Directory containing logo files
 
-You can modify these in the `docker compose.yml` file if needed.
+> You can modify these in the `docker compose.yml` file if needed.
 
 ### Native Installation
 
-1. Prepare your `workshop_info.txt` file with workshop details and participant names
-2. Run the generator:
+#### Prerequisites
+
+- Python 3.6 or higher
+  - **Windows**: Download from [python.org](https://www.python.org/downloads/windows/)
+  - **Linux**: Use your package manager (e.g., `sudo apt install python3` on Ubuntu/Debian)
+  - **macOS**: Comes pre-installed or use [Homebrew](https://brew.sh/): `brew install python`
+
+- LaTeX Distribution
+  - Windows
+    - Download and install [MiKTeX](https://miktex.org/download) (Recommended)
+    - Choose the complete installation
+    - Enable automatic package installation when prompted
+  - macOS
+    1. Install BasicTeX (minimal TeX distribution):
+       ```bash
+       brew install --cask basictex
+       ```
+    2. After installation restart your terminal or run:
+       ```bash
+       eval "$(/usr/libexec/path_helper)";
+       ```
+  - Linux (Ubuntu/Debian)
+
+    ```bash
+    sudo apt update
+    sudo apt install texlive-full
+    ```
+
+#### Option 1: Using the GUI
+
+1. Run the generator:
+   ```
+   python3 run_gui.py
+   ```
+2. Open the dashboard at `http://localhost:8501`
+
+#### Option 2: Using the Command Line
+
+1. Prepare your `workshop_info.txt` file with workshop details and participant names in your favourite text editor
+2. Add your partner's logo to the `logos/` directory, naming it as `partner.png`
+3. Run the generator:
    ```
    python3 generate_certificates.py
    ```
-3. Find your generated PDFs in the `pdfs` directory
+4. Find your generated PDFs in the `pdfs` directory
 
-## 🎨 Customization
+## Customization
 
 ### Certificate Design
 
@@ -187,37 +166,4 @@ Bob Johnson
 Charlie Brown
 ```
 
-## 🔧 Troubleshooting
-
-### Docker Issues
-
-- **Container won't start**:
-  - Make sure Docker is running
-  - Check for errors with `docker compose logs`
-  - Try rebuilding the container: `docker compose build --no-cache`
-
-- **Permission issues with generated files**:
-  ```bash
-  # On Linux/macOS, fix permissions:
-  sudo chown -R $USER:$USER .
-  ```
-
-### LaTeX Issues
-
-- **Missing LaTeX packages**:
-  - The Docker image includes common LaTeX packages
-  - If you need additional packages, modify the Dockerfile and rebuild:
-    ```dockerfile
-    RUN tlmgr update --self
-    RUN tlmgr install collection-fontsrecommended
-    ```
-
-- **Font issues**:
-  - The container includes standard fonts
-  - For custom fonts, add them to the `fonts/` directory and update the Dockerfile
-
-### Common Errors
-
-- **"No such file or directory"**: Check file paths in your configuration
-- **LaTeX compilation errors**: Check the output for specific LaTeX error messages
-- **Missing logos**: Ensure logo files exist in the `logos/` directory
+_this project was built with the help of AI_
