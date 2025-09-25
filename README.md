@@ -1,10 +1,14 @@
 # Certificate Generator
 
-This tool generates professional certificates from a LaTeX template for a list of participants. You can run it either natively (with Python and LaTeX installed) or using Docker (recommended).
+This tool generates professional certificates from a LaTeX template for a list of participants. You can run it either:
+- Using the graphical user interface (GUI) - Easiest method
+- Via command line (with Python and LaTeX installed)
+- Using Docker (for advanced users)
 
 ## 🚀 Features
 
 - Generate beautiful, professional certificates from a LaTeX template
+- User-friendly graphical interface for easy customization
 - Supports custom logos and design elements
 - Containerized with Docker for easy setup
 - Cross-platform support (Windows, macOS, Linux)
@@ -52,12 +56,40 @@ sudo apt install texlive-full
 
 ## Installation
 
-Clone or download this repository
+1. Clone or download this repository:
 
 ```bash
 git clone https://github.com/Pixalesce/Latex-Certificate-Generator
-cd certificate-generator
+cd Latex-Certificate-Generator
 ```
+
+2. Install the required Python packages:
+
+```bash
+pip install -r requirements-gui.txt
+```
+
+## Running the GUI Application
+
+The easiest way to use the Certificate Generator is through the graphical interface:
+
+1. **Launch the GUI**:
+   ```bash
+   python run_gui.py
+   ```
+   This will start a local web server and open the application in your default web browser.
+
+2. **Using the Interface**:
+   - The application will open at `http://localhost:8501`
+   - Configure your certificate settings in the sidebar
+   - Upload participant names or type them in the text area
+   - Preview the certificate design
+   - Generate and download all certificates with a single click
+
+3. **Troubleshooting**:
+   - If the browser doesn't open automatically, navigate to `http://localhost:8501` manually
+   - Ensure all required Python packages are installed from `requirements-gui.txt`
+   - Check the terminal for any error messages if the application fails to start
 
 ## Usage
 

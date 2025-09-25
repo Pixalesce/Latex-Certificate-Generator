@@ -4,29 +4,13 @@ Certificate Generator GUI
 A Streamlit-based GUI for generating LaTeX certificates with logo upload and configuration management.
 """
 
-import streamlit as st
 import os
 import shutil
-import tempfile
 import subprocess
-from pathlib import Path
-import json
 from datetime import datetime
-import base64
-from PIL import Image
-import io
-import logging
+from pathlib import Path
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('certificate_generator.log'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
+import streamlit as st
 
 # Configuration file paths
 CONFIG_FILE = "workshop_info.txt"
@@ -527,8 +511,90 @@ def main():
                 )
 
                 if sample_participant:
-                    preview_content = generate_certificate_preview(sample_participant, config)
-                    st.code(preview_content, language='latex')
+                    with st.spinner("Generating preview..."):
+                        # Generate a temporary PDF for preview
+                        import base64
+                        import tempfile
+                        from pathlib import Path
+
+                        # Create a temporary directory for the preview
+                        with tempfile.TemporaryDirectory() as temp_dir:
+                            # Generate LaTeX content
+                            latex_content = generate_certificate_preview(sample_participant, config)
+                            
+                            # Copy all necessary files to the temporary directory
+                            import shutil
+
+                            # Create necessary subdirectories in the temp dir
+                            temp_logo_dir = Path(temp_dir) / "logos"
+                            temp_logo_dir.mkdir(exist_ok=True, parents=True)
+                            
+                            # Copy all logo files
+                            logo_dir = Path("logos")
+                            if logo_dir.exists():
+                                for logo_file in logo_dir.glob("*"):
+                                    if logo_file.is_file():
+                                        shutil.copy2(logo_file, temp_logo_dir / logo_file.name)
+                            
+                            # Handle the partner logo path
+                            partner_logo = config.get('PARTNER_LOGO', 'logos/partner.png')
+                            if os.path.exists(partner_logo):
+                                shutil.copy2(partner_logo, temp_logo_dir / os.path.basename(partner_logo))
+                            
+                            # Update image paths in the LaTeX content to use relative paths
+                            # This ensures LaTeX can find the logo files in the temp directory
+                            latex_content = latex_content.replace(
+                                'includegraphics{logos/',
+                                'includegraphics{./logos/}'
+                            )
+                            
+                            # Also update the partner logo path if it's different
+                            if '<<PARTNER_LOGO>>' in latex_content:
+                                partner_logo_name = os.path.basename(partner_logo)
+                                latex_content = latex_content.replace(
+                                    '<<PARTNER_LOGO>>',
+                                    f'./logos/{partner_logo_name}'
+                                )
+                            
+                            # Save LaTeX to a temporary file
+                            temp_tex = Path(temp_dir) / "preview.tex"
+                            with open(temp_tex, 'w', encoding='utf-8') as f:
+                                f.write(latex_content)
+                            
+                            try:
+                                # Compile LaTeX to PDF (run twice to ensure references are resolved)
+                                # First compilation
+                                result = subprocess.run(
+                                    ['pdflatex', '-interaction=nonstopmode', '-output-directory', str(temp_dir), 'preview.tex'],
+                                    cwd=temp_dir,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    text=True
+                                )
+                                
+                                # Second compilation to resolve references
+                                result = subprocess.run(
+                                    ['pdflatex', '-interaction=nonstopmode', '-output-directory', str(temp_dir), 'preview.tex'],
+                                    cwd=temp_dir,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                    text=True
+                                )
+                                # Check if PDF was generated
+                                pdf_path = temp_tex.with_suffix('.pdf')
+                                if pdf_path.exists():
+                                    # Display the PDF
+                                    with open(pdf_path, "rb") as f:
+                                        base64_pdf = base64.b64encode(f.read()).decode('utf-8')
+                                        pdf_display = f'<iframe src="data:application/pdf;base64,{base64_pdf}" width="100%" height="700" type="application/pdf"></iframe>'
+                                        st.markdown(pdf_display, unsafe_allow_html=True)
+                                else:
+                                    st.error("Failed to generate PDF preview. Showing LaTeX code instead.")
+                                    st.code(latex_content, language='latex')
+                                    
+                            except subprocess.CalledProcessError as e:
+                                st.error(f"Error generating PDF preview: {e.stderr.decode()}")
+                                st.code(latex_content, language='latex')
 
         with col2:
             st.subheader("Generate Certificates")
@@ -537,19 +603,19 @@ def main():
             st.markdown(f"- Workshop: {config.get('WORKSHOP_NAME', 'N/A')}")
             st.markdown(f"- Date: {config.get('START_DATE', 'N/A')} to {config.get('END_DATE', 'N/A')} {config.get('YEAR', '')}")
 
-            generate_col, download_col = st.columns(2)
+            # Generate All Certificates button
+            if st.button("Generate All Certificates", type="primary", use_container_width=True):
+                with st.spinner("Generating certificates..."):
+                    success_count = 0
+                    for participant in participants:
+                        if generate_single_certificate(participant, config):
+                            success_count += 1
+                    st.success(f"Generated {success_count} out of {len(participants)} certificates successfully!")
+                    st.rerun()  # Refresh to show the new PDFs
             
-            with generate_col:
-                if st.button("Generate All Certificates", type="primary"):
-                    with st.spinner("Generating certificates..."):
-                        success_count = 0
-                        for participant in participants:
-                            if generate_single_certificate(participant, config):
-                                success_count += 1
-                        st.success(f"Generated {success_count} out of {len(participants)} certificates successfully!")
-                        st.rerun()  # Refresh to show the new PDFs
+            st.markdown("---")  # Add a horizontal line for separation
             
-            # Always show download links for existing PDFs
+            # Download section - moved below Generate button
             if os.path.exists(PDFS_DIR):
                 pdf_files = sorted(
                     [f for f in os.listdir(PDFS_DIR) if f.endswith('.pdf')],
@@ -558,95 +624,31 @@ def main():
                 )
                 
                 if pdf_files:
-                    with download_col:
-                        st.subheader("Download Certificates")
-                        
-                        # Download all button
-                        import zipfile
-                        import io
-                        
-                        zip_buffer = io.BytesIO()
-                        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                            for pdf_file in pdf_files:
-                                pdf_path = os.path.join(PDFS_DIR, pdf_file)
-                                zipf.write(pdf_path, pdf_file)
-                        
-                        zip_buffer.seek(0)
-                        st.download_button(
-                            label="Download All Certificates as ZIP",
-                            data=zip_buffer,
-                            file_name="all_certificates.zip",
-                            mime="application/zip",
-                            key="download_all_zip"
-                        )
-                        
-                        # Initialize selected files in session state if not exists
-                        if 'selected_files' not in st.session_state:
-                            st.session_state.selected_files = {pdf_file: False for pdf_file in pdf_files}
-                        
-                        # Track if we need to show the warning
-                        show_warning = False
-                        
-                        # Handle download selected button
-                        if st.button("Download Selected"):
-                            selected_files = [f for f, selected in st.session_state.selected_files.items() if selected]
-                            if not selected_files:
-                                show_warning = True
-                            else:
-                                import zipfile
-                                import io
-                                
-                                zip_buffer = io.BytesIO()
-                                with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
-                                    for pdf_file in selected_files:
-                                        pdf_path = os.path.join(PDFS_DIR, pdf_file)
-                                        zipf.write(pdf_path, pdf_file)
-                                
-                                zip_buffer.seek(0)
-                                st.download_button(
-                                    label=f"Download {len(selected_files)} selected certificates",
-                                    data=zip_buffer,
-                                    file_name=f"selected_certificates_{len(selected_files)}_files.zip",
-                                    mime="application/zip",
-                                    key="download_selected_zip"
-                                )
-                        
-                        # Show warning if needed
-                        if show_warning:
-                            st.warning("Please select at least one certificate to download.")
-                        
-                        # Show individual download buttons with checkboxes
-                        st.markdown("### Individual Certificates")
+                    st.subheader("Download Certificates")
+                    
+                    # Download all button
+                    import io
+                    import zipfile
+                    
+                    zip_buffer = io.BytesIO()
+                    with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zipf:
                         for pdf_file in pdf_files:
-                            # Create columns for checkbox and download button
-                            col1, col2 = st.columns([1, 10])
-                            
-                            # Checkbox for selection
-                            with col1:
-                                # Use a unique key for the checkbox based on the file name
-                                checkbox_key = f"cb_{pdf_file}"
-                                # Update the session state when the checkbox changes
-                                if st.checkbox(
-                                    "",
-                                    value=st.session_state.selected_files.get(pdf_file, False),
-                                    key=checkbox_key,
-                                    label_visibility="collapsed"
-                                ) != st.session_state.selected_files.get(pdf_file, False):
-                                    st.session_state.selected_files[pdf_file] = not st.session_state.selected_files.get(pdf_file, False)
-                                    st.rerun()
-                            
-                            # Download button
-                            with col2:
-                                pdf_path = os.path.join(PDFS_DIR, pdf_file)
-                                with open(pdf_path, "rb") as f:
-                                    st.download_button(
-                                        label=pdf_file,
-                                        data=f,
-                                        file_name=pdf_file,
-                                        mime="application/pdf",
-                                        key=f"dl_{pdf_file}",
-                                        use_container_width=True
-                                    )
+                            pdf_path = os.path.join(PDFS_DIR, pdf_file)
+                            zipf.write(pdf_path, pdf_file)
+                    
+                    zip_buffer.seek(0)
+                    st.download_button(
+                        label="Download All Certificates as ZIP",
+                        data=zip_buffer,
+                        file_name="all_certificates.zip",
+                        mime="application/zip",
+                        key="download_all_zip",
+                        use_container_width=True
+                    )
+                    
+                    # Show count of available certificates
+                    st.markdown(f"*{len(pdf_files)} certificates available for download*")
+                    st.markdown("*Click the button above to download all certificates as a ZIP file*")
 
     elif page == "Settings":
         st.header("Settings")
@@ -681,6 +683,18 @@ def generate_single_certificate(participant_name, config):
             content = file.read()
 
         trainer_table = generate_trainer_table(config)
+        
+        # Handle partner logo path
+        partner_logo = config.get('PARTNER_LOGO', 'logos/partner.png')
+        
+        # Make sure the logos directory exists
+        logo_dir = Path('logos')
+        logo_dir.mkdir(exist_ok=True)
+        
+        # Make sure the partner logo exists
+        if not os.path.exists(partner_logo):
+            st.warning(f"Partner logo not found at: {partner_logo}")
+            return False
 
         replacements = {
             '<<PARTICIPANT_NAME>>': escape_latex(participant_name),
@@ -690,7 +704,7 @@ def generate_single_certificate(participant_name, config):
             '<<END_DATE>>': escape_latex(config.get('END_DATE', '')),
             '<<YEAR>>': escape_latex(config.get('YEAR', '')),
             '<<FOOTER_TEXT>>': escape_latex(config.get('FOOTER_TEXT', '')),
-            '<<PARTNER_LOGO>>': config.get('PARTNER_LOGO', 'logos/partner.png'),
+            '<<PARTNER_LOGO>>': partner_logo,  # Use the original path
             '<<TRAINER_TABLE>>': trainer_table
         }
 
@@ -703,44 +717,41 @@ def generate_single_certificate(participant_name, config):
 
         # Create output directory if it doesn't exist
         output_dir = Path(PDFS_DIR)
-        output_dir.mkdir(exist_ok=True)
+        output_dir.mkdir(exist_ok=True, parents=True)
 
         # Create a safe filename from the participant's name
         safe_filename = ''.join(c if c.isalnum() else '_' for c in participant_name)
         base_filename = f'certificate_{safe_filename.upper()}'
-        tex_file = Path(f'{base_filename}.tex')
+        tex_file = output_dir / f'{base_filename}.tex'
 
-        # Write the modified content to the temporary file
+        # Write the modified content to the file in the output directory
         with open(tex_file, 'w', encoding='utf-8') as f:
             f.write(content)
 
-        # Compile the LaTeX file to PDF
-        for _ in range(2):
+        # Compile the LaTeX file to PDF from the project root directory
+        for _ in range(2):  # Run twice to ensure references are resolved
             result = subprocess.run(
                 ['pdflatex', '-interaction=nonstopmode', f'-output-directory={output_dir}', str(tex_file)],
-                cwd='.',
+                cwd='.',  # Run from project root so it can find the logos directory
                 capture_output=True,
                 text=True
             )
 
             if result.returncode != 0:
                 st.error(f"Error generating certificate for {participant_name}")
+                if result.stderr:
+                    st.text("LaTeX Error:")
+                    st.text(result.stderr)
                 return False
 
-        # Move the generated PDF to the output directory
-        pdf_source = Path(f'{base_filename}.pdf')
-        if pdf_source.exists():
-            shutil.move(str(pdf_source), str(output_dir / pdf_source.name))
-
-        # Clean up auxiliary files
-        for directory in ['.', output_dir]:
-            for ext in ['.aux', '.log', '.out', '.tex']:
-                aux_file = Path(directory) / f'{base_filename}{ext}'
-                if aux_file.exists() and aux_file.is_file():
-                    try:
-                        aux_file.unlink()
-                    except:
-                        pass
+        # Clean up auxiliary files in the output directory
+        for ext in ['.aux', '.log', '.out', '.tex']:
+            aux_file = output_dir / f'{base_filename}{ext}'
+            if aux_file.exists() and aux_file.is_file():
+                try:
+                    aux_file.unlink()
+                except Exception as e:
+                    logger.warning(f"Could not remove {aux_file}: {e}")
 
         return True
 
