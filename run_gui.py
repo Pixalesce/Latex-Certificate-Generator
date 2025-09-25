@@ -24,7 +24,9 @@ def main():
         subprocess.run([
             sys.executable, "-m", "streamlit", "run", gui_script,
             "--server.port", "8501",
-            "--server.address", "localhost",
+            "--server.address", "0.0.0.0",
+            "--server.headless", "true",
+            "--browser.gatherUsageStats", "false",
             "--theme.base", "light"
         ], cwd=script_dir)
     except KeyboardInterrupt:

@@ -1,11 +1,33 @@
 services:
   certificate-generator:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     volumes:
       - ./pdfs:/app/pdfs
       - ./workshop_info.txt:/app/workshop_info.txt
       - ./certificate.tex:/app/certificate.tex
       - ./logos:/app/logos
     working_dir: /app
-    # To run: docker-compose run --rm certificate-generator
-    # Or to rebuild and run: docker-compose up --build
+
+  # GUI Service
+  certificate-gui:
+    build:
+      context: .
+      dockerfile: Dockerfile.gui
+    ports:
+      - 8501:8501
+    volumes:
+      - ./workshop_info.txt:/app/workshop_info.txt
+      - ./certificate.tex:/app/certificate.tex
+      - ./certificate_gui.py:/app/certificate_gui.py
+      - ./run_gui.py:/app/run_gui.py
+      - ./logos:/app/logos
+    working_dir: /app
+    entrypoint: ["python3", "-u", "run_gui.py"]
+    networks:
+      - cert-network
+
+networks:
+  cert-network:
+    driver: bridge
